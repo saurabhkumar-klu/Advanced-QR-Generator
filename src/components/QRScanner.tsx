@@ -1,8 +1,7 @@
 import { useRef, useEffect, useState } from 'react';
 import { Camera, CameraOff, RotateCcw } from 'lucide-react';
 
-// Dynamic import for QR Scanner to handle potential loading issues
-let QrScanner: any = null;
+type CameraType = { id: string; label: string };
 
 interface QRScannerProps {
   onScan: (result: string) => void;
@@ -11,80 +10,110 @@ interface QRScannerProps {
 
 export default function QRScannerComponent({ onScan, onClose }: QRScannerProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
-  const [scanner, setScanner] = useState<any>(null);
   const [isScanning, setIsScanning] = useState(false);
   const [error, setError] = useState<string>('');
-  type CameraType = { id: string; label: string };
   const [cameras, setCameras] = useState<CameraType[]>([]);
   const [currentCameraIndex, setCurrentCameraIndex] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
+  const scannerInstance = useRef<any>(null);
 
-  useEffect(() => {
-    const initScanner = async () => {
-      if (!videoRef.current) return;
+  const initScanner = async () => {
+    if (!videoRef.current) return;
+    
+    setIsLoading(true);
+    setError('');
 
-      try {
-        // Dynamic import of QR Scanner
-        if (!QrScanner) {
-          const module = await import('qr-scanner');
-          QrScanner = module.default;
+    try {
+      const { default: QrScanner } = await import('qr-scanner');
+      QrScanner.WORKER_PATH = '/qr-scanner-worker.min.js';
+
+      const availableCameras = await QrScanner.listCameras(true);
+      if (availableCameras.length === 0) {
+        throw new Error('No cameras found. Please check your device has a camera.');
+      }
+      setCameras(availableCameras);
+
+      // Stop and clean up previous instance if exists
+      if (scannerInstance.current) {
+        await scannerInstance.current.stop();
+        scannerInstance.current.destroy();
+      }
+
+      scannerInstance.current = new QrScanner(
+        videoRef.current,
+        (result: { data: string }) => {
+          onScan(result.data);
+          scannerInstance.current?.stop();
+          setIsScanning(false);
+        },
+        {
+          highlightScanRegion: true,
+          highlightCodeOutline: true,
+          preferredCamera: availableCameras[currentCameraIndex]?.id,
+          maxScansPerSecond: 5,
         }
+      );
 
-        setIsLoading(false);
-        const availableCameras = await QrScanner.listCameras(true);
-        setCameras(availableCameras);
-
-        const qrScanner = new QrScanner(
-          videoRef.current,
-          (result: { data: string }) => {
-            onScan(result.data);
-            qrScanner.stop();
-          },
-          {
-            highlightScanRegion: true,
-            highlightCodeOutline: true,
-            preferredCamera: availableCameras[currentCameraIndex]?.id || 'environment'
-          }
-        );
-
-        setScanner(qrScanner);
-        await qrScanner.start();
-        setIsScanning(true);
-      } catch (err) {
-        setIsLoading(false);
-        setError('Failed to access camera. Please check permissions and ensure you\'re using HTTPS.');
-        console.error('Scanner error:', err);
-      }
-    };
-
-    initScanner();
-
-    return () => {
-      if (scanner) {
-        scanner.stop();
-        scanner.destroy();
-      }
-    };
-  }, [currentCameraIndex]);
+      await scannerInstance.current.start();
+      setIsScanning(true);
+    } catch (err) {
+      const errorMessage = err instanceof Error 
+        ? err.message 
+        : 'Failed to access camera. Please check permissions and ensure HTTPS.';
+      setError(errorMessage);
+      console.error('Scanner initialization error:', err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const switchCamera = async () => {
-    if (cameras.length > 1) {
-      const nextIndex = (currentCameraIndex + 1) % cameras.length;
+    if (cameras.length <= 1 || !scannerInstance.current) return;
+    
+    const nextIndex = (currentCameraIndex + 1) % cameras.length;
+    try {
+      await scannerInstance.current.setCamera(cameras[nextIndex].id);
       setCurrentCameraIndex(nextIndex);
+    } catch (err) {
+      console.error('Camera switch error:', err);
+      setError('Failed to switch camera. Please try again.');
     }
   };
 
   const toggleScanning = async () => {
-    if (!scanner) return;
+    if (!scannerInstance.current) return;
 
-    if (isScanning) {
-      await scanner.stop();
-      setIsScanning(false);
-    } else {
-      await scanner.start();
-      setIsScanning(true);
+    try {
+      if (isScanning) {
+        await scannerInstance.current.stop();
+      } else {
+        await scannerInstance.current.start();
+      }
+      setIsScanning(!isScanning);
+    } catch (err) {
+      console.error('Scan toggle error:', err);
+      setError('Failed to toggle scanning. Please try again.');
     }
   };
+
+  useEffect(() => {
+    initScanner();
+
+    return () => {
+      if (scannerInstance.current) {
+        scannerInstance.current.stop().then(() => {
+          scannerInstance.current.destroy();
+        }).catch(console.error);
+      }
+    };
+  }, []);
+
+  useEffect(() => {
+    if (scannerInstance.current && cameras.length > 0) {
+      scannerInstance.current.setCamera(cameras[currentCameraIndex]?.id)
+        .catch(console.error);
+    }
+  }, [currentCameraIndex, cameras]);
 
   return (
     <div className="fixed inset-0 bg-black/90 backdrop-blur-sm z-50 flex items-center justify-center p-4">
@@ -94,6 +123,7 @@ export default function QRScannerComponent({ onScan, onClose }: QRScannerProps) 
           <button
             onClick={onClose}
             className="p-2 rounded-lg bg-white/10 hover:bg-white/20 transition-colors text-white"
+            aria-label="Close scanner"
           >
             ✕
           </button>
@@ -102,18 +132,20 @@ export default function QRScannerComponent({ onScan, onClose }: QRScannerProps) 
         {isLoading ? (
           <div className="text-center py-8">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-400 mx-auto mb-4"></div>
-            <p className="text-white">Loading camera...</p>
+            <p className="text-white">Initializing scanner...</p>
           </div>
         ) : error ? (
           <div className="text-center py-8">
             <CameraOff className="w-12 h-12 text-red-400 mx-auto mb-4" />
             <p className="text-red-300 mb-4">{error}</p>
             <p className="text-sm text-gray-400 mb-4">
-              Note: Camera access requires HTTPS or localhost
+              {error.includes('permission') 
+                ? 'Please allow camera access in your browser settings'
+                : 'Note: Camera access requires HTTPS or localhost'}
             </p>
             <button
-              onClick={() => window.location.reload()}
-              className="px-4 py-2 bg-red-500/20 hover:bg-red-500/30 rounded-lg transition-colors text-red-300"
+              onClick={initScanner}
+              className="px-4 py-2 bg-purple-600 hover:bg-purple-700 rounded-lg transition-colors text-white"
             >
               Retry
             </button>
@@ -139,9 +171,19 @@ export default function QRScannerComponent({ onScan, onClose }: QRScannerProps) 
               <button
                 onClick={toggleScanning}
                 className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 rounded-lg transition-colors text-white"
+                disabled={isLoading}
               >
-                {isScanning ? <CameraOff className="w-4 h-4" /> : <Camera className="w-4 h-4" />}
-                {isScanning ? 'Stop' : 'Start'}
+                {isScanning ? (
+                  <>
+                    <CameraOff className="w-4 h-4" />
+                    Stop
+                  </>
+                ) : (
+                  <>
+                    <Camera className="w-4 h-4" />
+                    Start
+                  </>
+                )}
               </button>
               
               {cameras.length > 1 && (
@@ -149,17 +191,21 @@ export default function QRScannerComponent({ onScan, onClose }: QRScannerProps) 
                   onClick={switchCamera}
                   className="px-4 py-2 bg-white/10 hover:bg-white/20 rounded-lg transition-colors text-white"
                   title="Switch Camera"
+                  disabled={isLoading}
                 >
                   <RotateCcw className="w-4 h-4" />
                 </button>
               )}
             </div>
 
+            {cameras.length > 0 && (
+              <p className="text-xs text-gray-400 mt-2">
+                Current camera: {cameras[currentCameraIndex]?.label || 'Default'}
+              </p>
+            )}
+
             <p className="text-sm text-gray-300 text-center mt-4">
               Position the QR code within the frame to scan
-            </p>
-            <p className="text-xs text-gray-400 text-center mt-2">
-              Works with any QR code content: URLs, text, WiFi, contacts, etc.
             </p>
           </>
         )}
