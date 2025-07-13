@@ -35,6 +35,7 @@ export default function QRGenerator() {
   const [favorites, setFavorites] = useState<Set<string>>(new Set());
   const [generationStatus, setGenerationStatus] = useState<'idle' | 'generating' | 'success' | 'error'>('idle');
   const [showSuccessAnimation, setShowSuccessAnimation] = useState(false);
+  const [autoGenerate, setAutoGenerate] = useState(true);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const qrOptions: QROptions = {
@@ -81,6 +82,8 @@ export default function QRGenerator() {
   };
 
   useEffect(() => {
+    if (!autoGenerate) return;
+    
     const timeoutId = setTimeout(() => {
       generateQR();
     }, 300); // Debounce
@@ -191,7 +194,8 @@ export default function QRGenerator() {
   };
 
   const handleTemplateSelect = (template: QRTemplate) => {
-    setText(template.placeholder);
+    const formattedText = template.format(template.placeholder);
+    setText(formattedText);
     setShowTemplates(false);
   };
 
@@ -212,45 +216,45 @@ export default function QRGenerator() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-purple-900 to-violet-800">
-      <div className="container mx-auto px-4 py-8">
+      <div className="container mx-auto px-2 sm:px-4 py-4 sm:py-8">
         {/* Header */}
-        <div className="text-center mb-8">
-          <h1 className="text-4xl md:text-6xl font-bold text-white mb-4">
+        <div className="text-center mb-4 sm:mb-8">
+          <h1 className="text-2xl sm:text-4xl md:text-6xl font-bold text-white mb-2 sm:mb-4">
             Advanced QR Generator
           </h1>
-          <p className="text-xl text-gray-300 max-w-2xl mx-auto">
+          <p className="text-sm sm:text-lg md:text-xl text-gray-300 max-w-2xl mx-auto px-2">
             Create, customize, and manage QR codes with professional features. Scan, bulk generate, and export in multiple formats.
           </p>
         </div>
 
         {/* Quick Actions */}
-        <div className="max-w-6xl mx-auto mb-8">
-          <div className="flex flex-wrap gap-3 justify-center">
+        <div className="max-w-6xl mx-auto mb-4 sm:mb-8">
+          <div className="grid grid-cols-2 sm:flex sm:flex-wrap gap-2 sm:gap-3 justify-center">
             <button
               onClick={() => setShowTemplates(true)}
-              className="flex items-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/20 rounded-lg transition-colors text-purple-300 backdrop-blur-sm"
+              className="flex items-center justify-center gap-1 sm:gap-2 px-2 sm:px-4 py-2 bg-white/10 hover:bg-white/20 rounded-lg transition-colors text-purple-300 backdrop-blur-sm text-xs sm:text-sm"
             >
               <Grid className="w-4 h-4" />
-              Templates
+              <span className="hidden sm:inline">Templates</span>
             </button>
             <button
               onClick={() => setShowScanner(true)}
-              className="flex items-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/20 rounded-lg transition-colors text-purple-300 backdrop-blur-sm"
+              className="flex items-center justify-center gap-1 sm:gap-2 px-2 sm:px-4 py-2 bg-white/10 hover:bg-white/20 rounded-lg transition-colors text-purple-300 backdrop-blur-sm text-xs sm:text-sm"
             >
               <Scan className="w-4 h-4" />
-              Scan & Decode
+              <span className="hidden sm:inline">Scan &</span> Decode
             </button>
             <button
               onClick={() => setShowBulkGenerator(true)}
-              className="flex items-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/20 rounded-lg transition-colors text-purple-300 backdrop-blur-sm"
+              className="flex items-center justify-center gap-1 sm:gap-2 px-2 sm:px-4 py-2 bg-white/10 hover:bg-white/20 rounded-lg transition-colors text-purple-300 backdrop-blur-sm text-xs sm:text-sm"
             >
               <Layers className="w-4 h-4" />
-              Bulk Generate
+              <span className="hidden sm:inline">Bulk</span> Generate
             </button>
             <button
               onClick={copyToClipboard}
               disabled={!qrDataUrl}
-              className="flex items-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/20 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg transition-colors text-purple-300 backdrop-blur-sm"
+              className="flex items-center justify-center gap-1 sm:gap-2 px-2 sm:px-4 py-2 bg-white/10 hover:bg-white/20 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg transition-colors text-purple-300 backdrop-blur-sm text-xs sm:text-sm"
             >
               <Copy className="w-4 h-4" />
               Copy
@@ -258,20 +262,20 @@ export default function QRGenerator() {
           </div>
         </div>
 
-        <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-8">
           {/* Input Section */}
-          <div className="space-y-6">
+          <div className="space-y-4 sm:space-y-6">
             {/* Text Input */}
-            <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-6 border border-white/20 shadow-xl">
+            <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-4 sm:p-6 border border-white/20 shadow-xl">
               <div className="flex items-center gap-3 mb-4">
                 <Type className="w-5 h-5 text-purple-300" />
-                <h2 className="text-xl font-semibold text-white">Enter Your Content</h2>
+                <h2 className="text-lg sm:text-xl font-semibold text-white">Enter Your Content</h2>
               </div>
               <textarea
                 value={text}
                 onChange={(e) => handleTextChange(e.target.value)}
                 placeholder="Enter text, URL, or any content..."
-                className="w-full h-32 px-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-transparent resize-none"
+                className="w-full h-24 sm:h-32 px-3 sm:px-4 py-2 sm:py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-transparent resize-none text-sm sm:text-base"
               />
               <div className="mt-3 flex items-center justify-between">
                 <div className="text-sm text-gray-300">
@@ -290,14 +294,36 @@ export default function QRGenerator() {
               {validationError && (
                 <p className="text-red-400 text-sm mt-2">{validationError}</p>
               )}
+              
+              {/* Manual Generate Button */}
+              <div className="mt-4 flex items-center gap-3">
+                <button
+                  onClick={generateQR}
+                  disabled={!text.trim() || isGenerating}
+                  className="flex items-center gap-2 px-3 sm:px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 disabled:from-gray-600 disabled:to-gray-600 disabled:cursor-not-allowed text-white font-semibold rounded-lg transition-all duration-300 text-sm sm:text-base"
+                >
+                  <Zap className="w-4 h-4" />
+                  {isGenerating ? 'Generating...' : 'Generate QR Code'}
+                </button>
+                
+                <label className="flex items-center gap-2 text-sm text-gray-300">
+                  <input
+                    type="checkbox"
+                    checked={autoGenerate}
+                    onChange={(e) => setAutoGenerate(e.target.checked)}
+                    className="rounded border-gray-300 text-purple-600 focus:ring-purple-500"
+                  />
+                  Auto-generate
+                </label>
+              </div>
             </div>
 
             {/* Advanced Settings Panel */}
-            <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-6 border border-white/20 shadow-xl">
+            <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-4 sm:p-6 border border-white/20 shadow-xl">
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-3">
                   <Settings className="w-5 h-5 text-purple-300" />
-                  <h2 className="text-xl font-semibold text-white">Advanced Settings</h2>
+                  <h2 className="text-lg sm:text-xl font-semibold text-white">Settings</h2>
                 </div>
                 <button
                   onClick={() => setShowSettings(!showSettings)}
@@ -310,23 +336,23 @@ export default function QRGenerator() {
               {/* Basic Settings - Always Visible */}
               <div className="space-y-4">
                 {/* Colors */}
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-300 mb-2">
                       Foreground Color
                     </label>
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-2 sm:gap-3">
                       <input
                         type="color"
                         value={foregroundColor}
                         onChange={(e) => setForegroundColor(e.target.value)}
-                        className="w-12 h-12 rounded-lg border-2 border-white/20 cursor-pointer"
+                        className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg border-2 border-white/20 cursor-pointer"
                       />
                       <input
                         type="text"
                         value={foregroundColor}
                         onChange={(e) => setForegroundColor(e.target.value)}
-                        className="flex-1 px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-purple-400"
+                        className="flex-1 px-2 sm:px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-purple-400"
                       />
                     </div>
                   </div>
@@ -334,18 +360,18 @@ export default function QRGenerator() {
                     <label className="block text-sm font-medium text-gray-300 mb-2">
                       Background Color
                     </label>
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-2 sm:gap-3">
                       <input
                         type="color"
                         value={backgroundColor}
                         onChange={(e) => setBackgroundColor(e.target.value)}
-                        className="w-12 h-12 rounded-lg border-2 border-white/20 cursor-pointer"
+                        className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg border-2 border-white/20 cursor-pointer"
                       />
                       <input
                         type="text"
                         value={backgroundColor}
                         onChange={(e) => setBackgroundColor(e.target.value)}
-                        className="flex-1 px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-purple-400"
+                        className="flex-1 px-2 sm:px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-purple-400"
                       />
                     </div>
                   </div>
@@ -356,12 +382,12 @@ export default function QRGenerator() {
                   <label className="block text-sm font-medium text-gray-300 mb-2">
                     Export Format
                   </label>
-                  <div className="grid grid-cols-4 gap-2">
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                     {(['PNG', 'JPEG', 'SVG', 'PDF'] as const).map((fmt) => (
                       <button
                         key={fmt}
                         onClick={() => setFormat(fmt)}
-                        className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                        className={`px-2 sm:px-3 py-2 rounded-lg text-xs sm:text-sm font-medium transition-colors ${
                           format === fmt
                             ? 'bg-purple-600 text-white'
                             : 'bg-white/10 text-gray-300 hover:bg-white/20'
@@ -403,12 +429,12 @@ export default function QRGenerator() {
                     <label className="block text-sm font-medium text-gray-300 mb-2">
                       Error Correction Level
                     </label>
-                    <div className="grid grid-cols-4 gap-2">
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                       {(['L', 'M', 'Q', 'H'] as const).map((level) => (
                         <button
                           key={level}
                           onClick={() => setErrorCorrectionLevel(level)}
-                          className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                          className={`px-2 sm:px-3 py-2 rounded-lg text-xs sm:text-sm font-medium transition-colors ${
                             errorCorrectionLevel === level
                               ? 'bg-purple-600 text-white'
                               : 'bg-white/10 text-gray-300 hover:bg-white/20'
@@ -448,15 +474,15 @@ export default function QRGenerator() {
                     <div className="flex gap-2">
                       <button
                         onClick={() => fileInputRef.current?.click()}
-                        className="flex items-center gap-2 px-3 py-2 bg-white/10 hover:bg-white/20 rounded-lg transition-colors text-purple-300"
+                        className="flex items-center gap-2 px-2 sm:px-3 py-2 bg-white/10 hover:bg-white/20 rounded-lg transition-colors text-purple-300 text-xs sm:text-sm"
                       >
                         <Upload className="w-4 h-4" />
-                        Upload Logo
+                        <span className="hidden sm:inline">Upload</span> Logo
                       </button>
                       {logo && (
                         <button
                           onClick={() => setLogo('')}
-                          className="flex items-center gap-2 px-3 py-2 bg-red-500/20 hover:bg-red-500/30 rounded-lg transition-colors text-red-300"
+                          className="flex items-center gap-2 px-2 sm:px-3 py-2 bg-red-500/20 hover:bg-red-500/30 rounded-lg transition-colors text-red-300 text-xs sm:text-sm"
                         >
                           <Trash2 className="w-4 h-4" />
                           Remove
@@ -472,7 +498,7 @@ export default function QRGenerator() {
                     />
                     {logo && (
                       <div className="mt-2">
-                        <img src={logo} alt="Logo preview" className="w-12 h-12 rounded border border-white/20" />
+                        <img src={logo} alt="Logo preview" className="w-10 h-10 sm:w-12 sm:h-12 rounded border border-white/20" />
                       </div>
                     )}
                   </div>
@@ -481,23 +507,23 @@ export default function QRGenerator() {
             </div>
 
             {/* History Panel */}
-            <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-6 border border-white/20 shadow-xl">
+            <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-4 sm:p-6 border border-white/20 shadow-xl">
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-3">
                   <History className="w-5 h-5 text-purple-300" />
-                  <h2 className="text-xl font-semibold text-white">History</h2>
+                  <h2 className="text-lg sm:text-xl font-semibold text-white">History</h2>
                 </div>
                 <div className="flex gap-2">
                   <button
                     onClick={() => setShowHistory(!showHistory)}
-                    className="px-3 py-1 text-sm bg-white/10 hover:bg-white/20 rounded-lg transition-colors text-purple-300"
+                    className="px-2 sm:px-3 py-1 text-xs sm:text-sm bg-white/10 hover:bg-white/20 rounded-lg transition-colors text-purple-300"
                   >
                     {showHistory ? 'Hide' : 'Show'}
                   </button>
                   {history.length > 0 && (
                     <button
                       onClick={clearHistory}
-                      className="px-3 py-1 text-sm bg-red-500/20 hover:bg-red-500/30 rounded-lg transition-colors text-red-300"
+                      className="px-2 sm:px-3 py-1 text-xs sm:text-sm bg-red-500/20 hover:bg-red-500/30 rounded-lg transition-colors text-red-300"
                     >
                       Clear
                     </button>
@@ -506,7 +532,7 @@ export default function QRGenerator() {
               </div>
 
               {showHistory && (
-                <div className="space-y-2 max-h-64 overflow-y-auto">
+                <div className="space-y-2 max-h-48 sm:max-h-64 overflow-y-auto">
                   {history.length === 0 ? (
                     <p className="text-gray-400 text-sm text-center py-4">
                       No QR codes generated yet
@@ -515,19 +541,19 @@ export default function QRGenerator() {
                     history.map((entry) => (
                       <div
                         key={entry.id}
-                        className="flex items-center gap-3 p-3 bg-white/5 hover:bg-white/10 rounded-lg transition-colors group"
+                        className="flex items-center gap-2 sm:gap-3 p-2 sm:p-3 bg-white/5 hover:bg-white/10 rounded-lg transition-colors group"
                       >
                         <img
                           src={entry.dataUrl}
                           alt="QR Code"
-                          className="w-10 h-10 rounded border border-white/20 cursor-pointer"
+                          className="w-8 h-8 sm:w-10 sm:h-10 rounded border border-white/20 cursor-pointer flex-shrink-0"
                           onClick={() => loadFromHistory(entry)}
                         />
                         <div className="flex-1 min-w-0">
-                          <p className="text-white text-sm truncate font-medium">
+                          <p className="text-white text-xs sm:text-sm truncate font-medium">
                             {entry.text}
                           </p>
-                          <div className="flex items-center gap-2 text-xs text-gray-400">
+                          <div className="flex items-center gap-1 sm:gap-2 text-xs text-gray-400">
                             <span>{entry.timestamp.toLocaleDateString()}</span>
                             <span>•</span>
                             <span>{entry.format}</span>
@@ -535,7 +561,7 @@ export default function QRGenerator() {
                             <span>{entry.size}px</span>
                           </div>
                         </div>
-                        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
                           <button
                             onClick={() => toggleFavorite(entry.id)}
                             className={`p-1 rounded transition-colors ${
@@ -562,41 +588,41 @@ export default function QRGenerator() {
           </div>
 
           {/* Preview Section */}
-          <div className="space-y-6">
+          <div className="space-y-4 sm:space-y-6">
             {/* QR Code Preview */}
-            <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-8 border border-white/20 shadow-xl">
-              <h2 className="text-xl font-semibold text-white mb-6 text-center">
+            <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-4 sm:p-8 border border-white/20 shadow-xl">
+              <h2 className="text-lg sm:text-xl font-semibold text-white mb-4 sm:mb-6 text-center">
                 QR Code Preview
               </h2>
               
-              <div className="flex justify-center mb-6">
-                <div className={`bg-white p-6 rounded-2xl shadow-2xl relative transition-all duration-500 ${
+              <div className="flex justify-center mb-4 sm:mb-6">
+                <div className={`bg-white p-3 sm:p-6 rounded-2xl shadow-2xl relative transition-all duration-500 ${
                   showSuccessAnimation ? 'ring-4 ring-green-400 ring-opacity-75 scale-105' : ''
                 } ${generationStatus === 'generating' ? 'animate-pulse' : ''}`}>
                   {isGenerating ? (
-                    <div className="w-64 h-64 bg-gray-100 rounded-lg flex flex-col items-center justify-center">
+                    <div className="w-48 h-48 sm:w-64 sm:h-64 bg-gray-100 rounded-lg flex flex-col items-center justify-center">
                       <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600 mb-3"></div>
-                      <p className="text-gray-600 text-sm font-medium">Generating QR Code...</p>
+                      <p className="text-gray-600 text-xs sm:text-sm font-medium text-center">Generating QR Code...</p>
                     </div>
                   ) : qrDataUrl ? (
                     <div className="relative">
                       <img
                         src={qrDataUrl}
                         alt="Generated QR Code"
-                        className="w-64 h-64 object-contain"
+                        className="w-48 h-48 sm:w-64 sm:h-64 object-contain"
                         style={{ imageRendering: 'pixelated' }}
                       />
                       {generationStatus === 'success' && showSuccessAnimation && (
                         <div className="absolute inset-0 flex items-center justify-center">
-                          <div className="bg-green-500 text-white px-3 py-1 rounded-full text-sm font-medium animate-bounce">
+                          <div className="bg-green-500 text-white px-2 sm:px-3 py-1 rounded-full text-xs sm:text-sm font-medium animate-bounce">
                             ✓ Generated!
                           </div>
                         </div>
                       )}
                     </div>
                   ) : (
-                    <div className="w-64 h-64 bg-gray-100 rounded-lg flex items-center justify-center">
-                      <p className="text-gray-500 text-center">Enter text to generate QR code</p>
+                    <div className="w-48 h-48 sm:w-64 sm:h-64 bg-gray-100 rounded-lg flex items-center justify-center p-4">
+                      <p className="text-gray-500 text-center text-sm">Enter text to generate QR code</p>
                     </div>
                   )}
                   
@@ -629,9 +655,9 @@ export default function QRGenerator() {
                 <button
                   onClick={downloadQR}
                   disabled={!qrDataUrl || isGenerating}
-                  className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 disabled:from-gray-600 disabled:to-gray-600 disabled:cursor-not-allowed text-white font-semibold py-4 px-6 rounded-xl transition-all duration-300 flex items-center justify-center gap-3 shadow-lg hover:shadow-xl transform hover:-translate-y-1"
+                  className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 disabled:from-gray-600 disabled:to-gray-600 disabled:cursor-not-allowed text-white font-semibold py-3 sm:py-4 px-4 sm:px-6 rounded-xl transition-all duration-300 flex items-center justify-center gap-2 sm:gap-3 shadow-lg hover:shadow-xl transform hover:-translate-y-1 text-sm sm:text-base"
                 >
-                  <Download className="w-5 h-5" />
+                  <Download className="w-4 sm:w-5 h-4 sm:h-5" />
                   Download {format}
                 </button>
 
@@ -639,7 +665,7 @@ export default function QRGenerator() {
                   <button
                     onClick={copyToClipboard}
                     disabled={!qrDataUrl}
-                    className="flex items-center justify-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/20 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg transition-colors text-white"
+                    className="flex items-center justify-center gap-1 sm:gap-2 px-2 sm:px-4 py-2 bg-white/10 hover:bg-white/20 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg transition-colors text-white text-xs sm:text-sm"
                   >
                     <Copy className="w-4 h-4" />
                     Copy
@@ -647,7 +673,7 @@ export default function QRGenerator() {
                   <button
                     onClick={() => navigator.share?.({ url: qrDataUrl })}
                     disabled={!qrDataUrl || !navigator.share}
-                    className="flex items-center justify-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/20 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg transition-colors text-white"
+                    className="flex items-center justify-center gap-1 sm:gap-2 px-2 sm:px-4 py-2 bg-white/10 hover:bg-white/20 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg transition-colors text-white text-xs sm:text-sm"
                   >
                     <Share2 className="w-4 h-4" />
                     Share
@@ -655,9 +681,9 @@ export default function QRGenerator() {
                 </div>
               </div>
 
-              <div className="mt-4 text-center text-sm text-gray-300">
+              <div className="mt-4 text-center text-xs sm:text-sm text-gray-300">
                 <div className="flex items-center justify-center gap-2">
-                  <span>{size}×{size}px • {format} format • Error correction: {errorCorrectionLevel}</span>
+                  <span className="text-center">{size}×{size}px • {format} • EC: {errorCorrectionLevel}</span>
                   {generationStatus === 'success' && (
                     <span className="inline-flex items-center gap-1 text-green-400">
                       <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
@@ -685,32 +711,32 @@ export default function QRGenerator() {
             </div>
 
             {/* Info Panel */}
-            <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-6 border border-white/20 shadow-xl">
-              <h3 className="text-lg font-semibold text-white mb-4">Tips & Features</h3>
+            <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-4 sm:p-6 border border-white/20 shadow-xl">
+              <h3 className="text-base sm:text-lg font-semibold text-white mb-4">Tips & Features</h3>
               <div className="space-y-3 text-sm text-gray-300">
                 <div className="flex items-start gap-3">
                   <div className="w-2 h-2 bg-purple-400 rounded-full mt-2 flex-shrink-0"></div>
-                  <p><strong>Templates:</strong> Use pre-built formats for WiFi, contacts, emails, etc.</p>
+                  <p className="text-xs sm:text-sm"><strong>Templates:</strong> Pre-built formats for WiFi, contacts, emails</p>
                 </div>
                 <div className="flex items-start gap-3">
                   <div className="w-2 h-2 bg-purple-400 rounded-full mt-2 flex-shrink-0"></div>
-                  <p><strong>Scanner:</strong> Decode any QR code using your device camera</p>
+                  <p className="text-xs sm:text-sm"><strong>Scanner:</strong> Camera or upload image to decode QR codes</p>
                 </div>
                 <div className="flex items-start gap-3">
                   <div className="w-2 h-2 bg-purple-400 rounded-full mt-2 flex-shrink-0"></div>
-                  <p><strong>Error Correction:</strong> Higher levels allow scanning even when damaged</p>
+                  <p className="text-xs sm:text-sm"><strong>Error Correction:</strong> Higher levels work when damaged</p>
                 </div>
                 <div className="flex items-start gap-3">
                   <div className="w-2 h-2 bg-purple-400 rounded-full mt-2 flex-shrink-0"></div>
-                  <p><strong>Logo Overlay:</strong> Add branding (recommended: 20% of QR size)</p>
+                  <p className="text-xs sm:text-sm"><strong>Logo:</strong> Add branding (20% of QR size recommended)</p>
                 </div>
                 <div className="flex items-start gap-3">
                   <div className="w-2 h-2 bg-purple-400 rounded-full mt-2 flex-shrink-0"></div>
-                  <p><strong>Bulk Generator:</strong> Create multiple QR codes from CSV/text files</p>
+                  <p className="text-xs sm:text-sm"><strong>Bulk:</strong> Generate multiple QR codes from lists</p>
                 </div>
                 <div className="flex items-start gap-3">
                   <div className="w-2 h-2 bg-purple-400 rounded-full mt-2 flex-shrink-0"></div>
-                  <p><strong>Universal Support:</strong> Works with any content - text, URLs, data, etc.</p>
+                  <p className="text-xs sm:text-sm"><strong>Universal:</strong> Any content - text, URLs, data, etc.</p>
                 </div>
               </div>
             </div>
